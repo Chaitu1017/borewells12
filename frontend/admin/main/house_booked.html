@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>House Bookings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #003366;
+      margin-bottom: 20px;
+    }
+    .booking-list {
+      display: grid;
+      gap: 20px;
+    }
+    .booking-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .booking-card h3 {
+      margin-top: 0;
+      color: #007bff;
+    }
+    .booking-card p {
+      margin: 5px 0;
+    }
+    .button-group {
+      margin-top: 15px;
+    }
+    .btn {
+      padding: 8px 12px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: white;
+    }
+    .btn.approve {
+      background-color: #4CAF50;
+    }
+    .btn.cancel {
+      background-color: #f44336;
+    }
+    .btn.bill {
+      background-color: #007bff;
+    }
+    .btn.back-btn {
+      display: inline-block;
+      background-color: #6c757d;
+      margin-bottom: 20px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="adminHeader"></div>
+
+  <div class="container">
+    <a href="admin_booking.html" class="btn back-btn">← Back to Bookings</a>
+    <h1>House Bookings</h1>
+    <div class="booking-list" id="bookingList">
+      <p style="text-align: center;">Loading bookings...</p>
+    </div>
+  </div>
+
+  <div id="adminFooter"></div>
+
+  <script>
+    // Dynamic header and footer
+    fetch("../partials/admin_header.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("adminHeader").innerHTML = html;
+      });
+
+    fetch("../partials/admin_footer.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("adminFooter").innerHTML = html;
+      });
+
+    async function fetchBookings() {
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/bookings/type/House");
+        const bookings = await res.json();
+        const list = document.getElementById("bookingList");
+        list.innerHTML = "";
+
+        if (!bookings || bookings.length === 0) {
+          list.innerHTML = "<p style='text-align: center;'>No House bookings found.</p>";
+          return;
+        }
+
+        bookings.forEach(booking => {
+          const card = document.createElement("div");
+          card.className = "booking-card";
+
+          const bookingDate = new Date(booking.date);
+          const isPastDate = bookingDate < new Date();
+          const isPending = booking.status === "Pending";
+          const isConfirmed = booking.status === "Confirmed";
+
+          card.innerHTML = `
+            <h3>Booking ID: ${booking._id}</h3>
+            <p><strong>Customer:</strong> ${booking.customerId?.name || "N/A"}</p>
+            <p><strong>Phone:</strong> ${booking.customerId?.phone || "N/A"}</p>
+            <p><strong>Date:</strong> ${bookingDate.toLocaleDateString()}</p>
+            <p><strong>Village:</strong> ${booking.village}</p>
+            <p><strong>Near Town:</strong> ${booking.town}</p>
+            <p><strong>Status:</strong> ${booking.status}</p>
+            <div class="button-group">
+              ${isPending ? `<button class="btn approve" onclick="updateStatus('${booking._id}', 'Confirmed')">Approve</button>` : ""}
+              ${(isPending || isConfirmed) ? `<button class="btn cancel" onclick="updateStatus('${booking._id}', 'Cancelled')">Cancel</button>` : ""}
+              ${isPastDate && isConfirmed ? `<button class="btn bill" onclick="sendBill('${booking._id}', '${booking.customerId?._id || ""}')">Send Bill</button>` : ""}
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+        document.getElementById("bookingList").innerHTML = "<p>Failed to load bookings.</p>";
+      }
+    }
+
+    async function updateStatus(bookingId, newStatus) {
+      try {
+        const res = await fetch(`http://localhost:5000/api/admin/bookings/${bookingId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Booking status updated to ${newStatus}`);
+          fetchBookings();
+        } else {
+          alert("Error: " + (data.message || "Unable to update status"));
+        }
+      } catch (error) {
+        console.error("Error updating status:", error);
+        alert("Failed to update booking status.");
+      }
+    }
+
+    async function sendBill(bookingId, customerId) {
+      const amount = prompt("Enter bill amount:");
+      const description = prompt("Enter bill description:");
+      if (amount && description) {
+        try {
+          const res = await fetch("http://localhost:5000/api/admin/bill", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bookingId, customerId, amount, description })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            alert("Bill sent successfully!");
+            fetchBookings();
+          } else {
+            alert("Error: " + (data.message || "Unable to send bill"));
+          }
+        } catch (error) {
+          console.error("Error sending bill:", error);
+          alert("Failed to send bill.");
+        }
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", fetchBookings);
+  </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<header class="header">
+  <div class="company-name" onclick="window.location.href='dashboard_customer.html'">
+    Sri Durga Devi Borewells
+  </div>
+
+  <div class="nav-links">
+    <button onclick="window.location.href='dashboard_customer.html'">Bookings</button>
+    <button>Pipedetails</button>
+  </div>
+
+  <div class="user-actions">
+    <span id="customerName">Welcome, Customer!</span>
+    <button onclick="alert('Profile Page Coming Soon')">Profile</button>
+    <button onclick="alert('Logging out...')">Logout</button>
+  </div>
+</header>
+
+<style>
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0077b6;
+    color: white;
+    padding: 15px 30px;
+  }
+  .company-name {
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .company-name:hover { transform: scale(1.1); }
+  .nav-links button,
+  .user-actions button {
+    margin: 0 8px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .nav-links button { background: #0096c7; color: white; }
+  .user-actions button { background: #ff6b6b; color: white; }
+</style>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Customer Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      color: #333;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #003366;
+      color: white;
+      padding: 15px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex-wrap: wrap;
+    }
+    .company-name {
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .user-actions span {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .user-actions button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+    .profile-btn { background: #f1c40f; color: #003366; }
+    .logout-btn { background: #e74c3c; color: white; }
+    .user-actions button:hover { transform: translateY(-2px); }
+
+    /* Main */
+    .main-dashboard { flex: 1; padding: 20px; }
+    .main-dashboard h2 { color: #003366; margin-bottom: 15px; font-size: 28px; }
+    .main-dashboard p.welcome-text { font-size: 18px; color: #555; margin-bottom: 25px; }
+
+    /* Dashboard cards */
+    .dashboard-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .dashboard-card {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      text-align: center;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .dashboard-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .dashboard-card h3 { margin-top: 10px; color: #003366; }
+    .dashboard-card .icon { font-size: 36px; color: #2980b9; }
+
+    /* Summary cards */
+    .summary-cards { display: grid; gap: 15px; }
+    .summary-card {
+      background: #ffffff;
+      padding: 20px;
+      border-left: 5px solid #003366;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .summary-card h3 { margin-bottom: 8px; color: #003366; }
+
+    /* Loader */
+    .loader {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 3px solid #ccc;
+      border-top: 3px solid #003366;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 6px;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Retry button */
+    .retry-btn {
+      margin-top: 8px;
+      padding: 6px 14px;
+      border: none;
+      border-radius: 6px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .retry-btn:hover { background: #0056b3; }
+
+    footer {
+      text-align: center;
+      background: #003366;
+      color: white;
+      padding: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="company-name" onclick="window.location.href='dashboard_customer.html'">
+      Sri Durga Devi Borewells
+    </div>
+    <div class="user-actions">
+      <span id="customerNameHeader">Welcome, Customer!</span>
+      <button class="profile-btn" onclick="viewProfile()">Profile</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="main-dashboard">
+    <h2>Welcome <span id="customerNameMain">Customer</span>!</h2>
+    <p class="welcome-text">Here's a quick overview of your account.</p>
+
+    <!-- Dashboard options -->
+    <div class="dashboard-cards">
+      <div class="dashboard-card" onclick="bookBore()">
+        <div class="icon">💧</div>
+        <h3>Book Borewell</h3>
+      </div>
+      <div class="dashboard-card" onclick="openBookings()">
+        <div class="icon">🗓️</div>
+        <h3>My Bookings</h3>
+      </div>
+      <div class="dashboard-card" onclick="openBills()">
+        <div class="icon">🧾</div>
+        <h3>My Bills</h3>
+      </div>
+      <div class="dashboard-card" onclick="giveReview()">
+        <div class="icon">⭐</div>
+        <h3>Give Review</h3>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <h3>Latest Booking</h3>
+        <div id="bookingInfo"><span class="loader"></span> Loading latest booking...</div>
+        <button id="retryBooking" class="retry-btn" style="display:none;" onclick="fetchDashboardData()">Retry</button>
+      </div>
+      <div class="summary-card">
+        <h3>Pending Bills</h3>
+        <p id="billInfo">No bills generated yet.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Sri Durga Devi Borewells | Vizianagaram, Andhra Pradesh</p>
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", fetchDashboardData);
+
+    async function fetchDashboardData() {
+      const customerName = localStorage.getItem("customerName") || "Customer";
+      const customerId = localStorage.getItem("customerId");
+
+      document.getElementById("customerNameMain").textContent = customerName;
+      document.getElementById("customerNameHeader").textContent = `Welcome, ${customerName}!`;
+
+      if (customerId) {
+        const bookingInfoDiv = document.getElementById("bookingInfo");
+        const retryBtn = document.getElementById("retryBooking");
+
+        retryBtn.style.display = "none";
+        bookingInfoDiv.innerHTML = `<span class="loader"></span> Loading latest booking...`;
+
+        try {
+          const res = await fetch(`/api/customer/${customerId}/latest-booking`);
+          if (res.ok) {
+            const booking = await res.json();
+            if (booking && booking.date) {
+              bookingInfoDiv.innerHTML = `
+                <p><strong>Type:</strong> ${booking.type}</p>
+                <p><strong>Date:</strong> ${new Date(booking.date).toLocaleDateString()}</p>
+                <p><strong>Status:</strong> ${booking.status}</p>
+              `;
+            } else {
+              bookingInfoDiv.innerHTML = `<p>No recent bookings found.</p>`;
+            }
+          } else {
+            bookingInfoDiv.innerHTML = `<p>No recent bookings found.</p>`;
+          }
+        } catch (error) {
+          console.error("Error fetching latest booking:", error);
+          bookingInfoDiv.innerHTML = `<p>Error loading booking info.</p>`;
+          retryBtn.style.display = "inline-block";
+        }
+      }
+    }
+
+    function bookBore() { window.location.href = "bookborewell.html"; }
+    function openBookings() { window.location.href = "mybookings.html"; }
+    function openBills() { window.location.href = "my_bills.html"; }
+    function giveReview() { window.location.href = "review.html"; }
+    function viewProfile() { window.location.href = "profile.html"; }
+    function logout() { localStorage.clear(); window.location.href = "../../login.html"; }
+  </script>
+</body>
+</html>

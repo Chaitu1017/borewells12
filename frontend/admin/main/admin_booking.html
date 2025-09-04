@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Bookings</title>
+  <style>
+    /* Simple, clean styling */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #003366;
+      margin-bottom: 20px;
+    }
+    .booking-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .booking-btn {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .booking-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .agri-btn {
+      background-color: #28a745;
+      color: white;
+    }
+    .house-btn {
+      background-color: #007bff;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="adminHeader"></div>
+
+  <div class="container">
+    <h1>Manage Customer Bookings</h1>
+    <div class="booking-buttons">
+      <button class="booking-btn agri-btn" onclick="window.location.href='agriculture_booked.html'">
+        Agriculture Booked
+      </button>
+      <button class="booking-btn house-btn" onclick="window.location.href='house_booked.html'">
+        House Booked
+      </button>
+    </div>
+  </div>
+
+  <div id="adminFooter"></div>
+
+  <script>
+    // Dynamic header and footer
+    fetch("../partials/admin_header.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("adminHeader").innerHTML = html;
+      });
+
+    fetch("../partials/admin_footer.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("adminFooter").innerHTML = html;
+      });
+  </script>
+</body>
+</html>

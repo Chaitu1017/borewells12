@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bills</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #003366;
+      margin-bottom: 20px;
+    }
+    .bill-list {
+      display: grid;
+      gap: 20px;
+    }
+    .bill-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      border-left: 5px solid #007bff;
+      text-align: left;
+    }
+    .bill-card h3 {
+      margin-top: 0;
+      color: #007bff;
+    }
+    .bill-card p {
+      margin: 5px 0;
+    }
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      color: white;
+      display: inline-block;
+    }
+    .btn.back-btn {
+      background-color: #6c757d;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="customerHeader"></div>
+
+  <div class="container">
+    <a href="dashboard_customer.html" class="btn back-btn">← Back to Dashboard</a>
+    <h1>My Bills</h1>
+    <div class="bill-list" id="billList">
+      <p>Loading bills...</p>
+    </div>
+  </div>
+
+  <div id="customerFooter"></div>
+
+  <script>
+    // Load header and footer dynamically
+    async function loadComponent(id, file) {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error(`Failed to load ${file}`);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    loadComponent("customerHeader", "../partials/customer_header.html");
+    loadComponent("customerFooter", "../partials/customer_footer.html");
+
+    // Fetch bills
+    async function fetchBills() {
+      const customerId = localStorage.getItem("customerId");
+      if (!customerId) {
+        document.getElementById("billList").innerHTML = "<p>Please log in to view your bills.</p>";
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/customer/${customerId}/bills`);
+        const bills = await res.json();
+        const list = document.getElementById("billList");
+        list.innerHTML = "";
+
+        if (!Array.isArray(bills) || bills.length === 0) {
+          list.innerHTML = "<p>You have no bills yet.</p>";
+          return;
+        }
+
+        bills.forEach(bill => {
+          const card = document.createElement("div");
+          card.className = "bill-card";
+          card.innerHTML = `
+            <h3>Bill for Booking ID: ${bill.bookingId}</h3>
+            <p><strong>Date:</strong> ${bill.date ? new Date(bill.date).toLocaleDateString() : "N/A"}</p>
+            <p><strong>Amount:</strong> ₹${bill.amount}</p>
+            <p><strong>Description:</strong> ${bill.description || "N/A"}</p>
+            <p><strong>Status:</strong> ${bill.status || "Pending"}</p>
+          `;
+          list.appendChild(card);
+        });
+      } catch (error) {
+        console.error("Error fetching bills:", error);
+        document.getElementById("billList").innerHTML = "<p>Failed to load bills.</p>";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", fetchBills);
+  </script>
+</body>
+</html>

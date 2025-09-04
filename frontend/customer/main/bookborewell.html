@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Borewell</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      text-align: center;
+      background-color: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    h1 {
+      color: #003366;
+      font-size: 2.2em;
+      margin-bottom: 40px;
+    }
+
+    .card-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .borewell-card {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      padding: 40px 30px;
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .borewell-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-icon {
+      font-size: 3em;
+      margin-bottom: 15px;
+    }
+
+    .card-icon.agriculture {
+      color: #27ae60; /* Green for agriculture */
+    }
+
+    .card-icon.house {
+      color: #3498db; /* Blue for house */
+    }
+
+    .borewell-card h2 {
+      font-size: 1.5em;
+      color: #333;
+      margin: 0;
+    }
+
+    .back-button {
+      padding: 10px 25px;
+      border: 2px solid #ccc;
+      border-radius: 50px;
+      background: transparent;
+      color: #555;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .back-button:hover {
+      background-color: #e0e0e0;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+
+  <header id="header"></header>
+
+  <div class="main-content">
+    <h1>Choose Borewell Type</h1>
+    <div class="card-container">
+      <div class="borewell-card" onclick="window.location.href='agriculture.html'">
+        <span class="card-icon agriculture">🌱</span>
+        <h2>Agriculture Bore</h2>
+      </div>
+      <div class="borewell-card" onclick="window.location.href='house.html'">
+        <span class="card-icon house">🏠</span>
+        <h2>House Bore</h2>
+      </div>
+    </div>
+    <button class="back-button" onclick="window.history.back()">Back</button>
+  </div>
+
+  <footer id="footer"></footer>
+
+  <script>
+    async function loadComponent(id, file) {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error(`Failed to load ${file}`);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    loadComponent("header", "../partials/customer_header.html");
+    loadComponent("footer", "../partials/customer_footer.html");
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sri Durga Devi Borewells</title>
+    <style>
+        /* General body styling for a full-screen background */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: url('https://images.unsplash.com/photo-1549487561-2679c381d69d?ixlib=rb-4.0.3&q=80&fm=jpg&crop=entropy&cs=tinysrgb&w=1920&h=1080&fit=crop&ixid=M3wzNDg5MzR8MHwxfHNlYXJjaHwxfHxib3Jld2VsbHxlbnwwfHx8fDE2OTU3NjgwMzR8MA') center/cover no-repeat;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Overlay for a subtle darkening effect */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Glassmorphism card container */
+        .glass-container {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.15); /* Translucent background */
+            backdrop-filter: blur(10px); /* The magic behind the glass effect */
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 40px 50px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        /* Styling for the form's heading */
+        h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        /* Input fields and select styling */
+        input[type="text"],
+        input[type="password"] {
+            width: calc(100% - 24px); /* Full width with padding */
+            padding: 12px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1em;
+            transition: border-color 0.3s, background-color 0.3s;
+            outline: none;
+        }
+
+        /* Placeholder text color */
+        ::placeholder {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #fff;
+        }
+
+        /* Submit button styling */
+        button[type="submit"] {
+            width: 100%;
+            padding: 15px;
+            background: #27ae60; /* A vibrant green for action */
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s;
+        }
+
+        button[type="submit"]:hover {
+            background: #2ecc71;
+            transform: translateY(-2px);
+        }
+
+        /* Links styling */
+        a {
+            color: #f1c40f; /* A bright, contrasting color */
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        a:hover {
+            color: #f39c12;
+        }
+
+        /* Checkbox and text styling */
+        label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        label input {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="glass-container">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="text" id="phone" placeholder="Mobile Number" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <label>
+                <input type="checkbox" required> Accept all terms and conditions
+            </label>
+            <button type="submit">Login</button>
+        </form>
+        <p>Don’t have an account? <a href="signup.html">Signup</a></p>
+        <p><a href="#" id="forgotPasswordLink">Forgot Password?</a></p>
+    </div>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const phone = document.getElementById("phone").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                // First try admin
+                let res = await fetch("http://localhost:5000/api/admin/login", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ phone, password })
+                });
+                let data = await res.json();
+
+                if (res.ok) {
+                    window.location.href = "admin/main/dashboard_admin.html";
+                    return;
+                }
+
+                // If not admin, try customer
+                res = await fetch("http://localhost:5000/api/customer/login", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ phone, password })
+                });
+                data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem("customerId", data.customerId);
+                    localStorage.setItem("customerName", data.name);
+                    window.location.href = "customer/main/dashboard_customer.html";
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                alert("⚠️ Server error, please try again later");
+            }
+        });
+
+        document.getElementById("forgotPasswordLink").addEventListener("click", async () => {
+            const phone = prompt("Enter your registered phone:");
+            const newPassword = prompt("Enter new password:");
+
+            if (phone && newPassword) {
+                // Try resetting for customer first
+                let res = await fetch("http://localhost:5000/api/customer/forgot-password", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ phone, newPassword })
+                });
+
+                if (!res.ok) {
+                    // Try admin if customer not found
+                    await fetch("http://localhost:5000/api/admin/forgot-password", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ phone, newPassword })
+                    });
+                }
+                alert("✅ Password reset successful! Try login again.");
+            }
+        });
+    </script>
+</body>
+</html>

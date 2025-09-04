@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Signup</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>Signup</h2>
+  <form id="signupForm">
+    <select id="role">
+      <option value="customer">Customer</option>
+      <option value="admin">Admin</option>
+    </select><br>
+    <input type="text" id="name" placeholder="Name" required><br>
+    <input type="text" id="phone" placeholder="Phone Number" required><br>
+    <input type="password" id="password" placeholder="Password" required><br>
+    <input type="password" id="confirmPassword" placeholder="Confirm Password" required><br>
+    <button type="submit">Signup</button>
+  </form>
+
+  <script>
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const role = document.getElementById("role").value;
+      const name = document.getElementById("name").value;
+      const phone = document.getElementById("phone").value;
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      if (password !== confirmPassword) {
+        alert("Passwords do not match!");
+        return;
+      }
+
+      const url = role === "admin" 
+        ? "http://localhost:5000/api/admin/signup"
+        : "http://localhost:5000/api/customer/signup";
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, phone, password })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Signup successful! Please login.");
+          window.location.href = "login.html";
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert("⚠️ Error during signup. Please try again.");
+      }
+    });
+  </script>
+</body>
+</html>

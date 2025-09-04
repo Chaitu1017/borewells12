@@ -1,0 +1,75 @@
+/* General */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; line-height: 1.6; background: #f9f9f9; }
+
+/* Header */
+header {
+  background: #0d3b66; color: white; padding: 15px 30px;
+  display: flex; justify-content: flex-start; align-items: center;
+  position: sticky; top: 0; font-size: 20px; font-weight: bold;
+}
+
+/* Hero */
+.hero {
+  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+              url('https://images.unsplash.com/photo-1601324296881-3c59d61f4ef6?auto=format&fit=crop&w=1350&q=80') center/cover;
+  color: white; height: 80vh; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; text-align: center;
+}
+.floating {
+  font-size: 45px; font-weight: bold;
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+.hero p { font-size: 18px; margin: 15px 0; }
+.hero-btn {
+  padding: 12px 25px; background: #f95738; color: white;
+  border: none; border-radius: 5px; font-size: 16px; cursor: pointer;
+}
+.hero-btn:hover { background: #c7422b; }
+
+/* Services */
+.services { padding: 40px; text-align: center; background: #fff; }
+.services h2 { margin-bottom: 20px; font-size: 28px; }
+.service-cards {
+  display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+}
+.card {
+  background: #f1f1f1; padding: 20px; border-radius: 10px;
+  width: 300px; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+}
+.card h3 { margin-bottom: 10px; }
+
+/* About */
+.about { padding: 40px; background: #f9f9f9; text-align: center; }
+.about h2 { margin-bottom: 15px; }
+
+/* Footer */
+footer { background: #0d3b66; color: white; text-align: center; padding: 20px; }
+
+/* Forms */
+.form-container {
+  max-width: 400px; margin: 50px auto; background: #fff;
+  padding: 25px; border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0,0,0,0.1);
+}
+.form-container h2 { text-align: center; margin-bottom: 20px; }
+.form-container label { display: block; margin: 10px 0 5px; font-weight: bold; }
+.form-container input, .form-container select {
+  width: 100%; padding: 10px; margin-bottom: 15px;
+  border-radius: 5px; border: 1px solid #ccc;
+}
+.form-container button {
+  width: 100%; padding: 12px; background: #0d3b66;
+  color: white; border: none; border-radius: 5px; font-size: 16px;
+  cursor: pointer;
+}
+.form-container button:hover { background: #09294d; }
+.terms { display: flex; align-items: center; margin-bottom: 15px; }
+.signup-text { text-align: center; margin-top: 10px; }
+.signup-text a { color: #f95738; text-decoration: none; }
+.signup-text a:hover { text-decoration: underline; }

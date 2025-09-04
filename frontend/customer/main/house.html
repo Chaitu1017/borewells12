@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book House Borewell</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+    .form-container {
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #003366;
+    }
+    label {
+      display: block;
+      text-align: left;
+      margin: 10px 0 5px;
+      font-weight: bold;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button[type="submit"] {
+      background: #003366;
+      color: #fff;
+    }
+    button[type="submit"]:hover {
+      background: #00599c;
+    }
+    .back-button {
+      background: #ccc;
+      color: #333;
+    }
+    .back-button:hover {
+      background: #aaa;
+    }
+    #availability-status {
+      margin: 10px 0;
+      font-weight: bold;
+    }
+    .availability-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .availability-card {
+      padding: 15px;
+      border-radius: 8px;
+      font-weight: bold;
+      color: white;
+      text-align: center;
+    }
+    .available { background-color: #28a745; }
+    .limited { background-color: #ffc107; color: #333; }
+    .unavailable { background-color: #dc3545; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div id="header"></div>
+
+  <!-- Form -->
+  <div class="form-container">
+    <h1>Book House Borewell</h1>
+    <form id="houseForm">
+      <label for="date">Date:</label>
+      <input type="date" id="date" name="date" required>
+      <div id="availability-status"></div>
+
+      <label for="village">Village/Town:</label>
+      <input type="text" id="village" name="village" placeholder="Enter village name" required>
+
+      <label for="town">Nearest Town Area:</label>
+      <input type="text" id="town" name="town" placeholder="Enter nearest town" required>
+
+      <button type="submit">Confirm Booking</button>
+      <button type="button" class="back-button" onclick="window.history.back()">Back</button>
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <div id="footer"></div>
+
+  <script>
+    // Load header & footer
+    async function loadComponent(id, file) {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error(`Failed to load ${file}`);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    loadComponent("header", "../partials/customer_header.html");
+    loadComponent("footer", "../partials/customer_footer.html");
+
+    // Handle booking
+    document.getElementById("houseForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const customerId = localStorage.getItem("customerId");
+      if (!customerId) {
+        alert("❌ Please log in to continue booking.");
+        window.location.href = "../../login.html";
+        return;
+      }
+
+      const bookingData = {
+        customerId: customerId,
+        type: "House",
+        date: document.getElementById("date").value,
+        village: document.getElementById("village").value.trim(),
+        town: document.getElementById("town").value.trim()
+      };
+
+      try {
+        const res = await fetch("/api/customer/book-bore", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bookingData)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("🎉 Congratulations! Your booking is confirmed. Check details on My Bookings page.");
+          window.location.href = "mybookings.html";
+        } else {
+          alert("⚠️ Error: " + (data.message || "Something went wrong. Please try again."));
+        }
+      } catch (error) {
+        console.error("Booking request failed:", error);
+        alert("❌ Network Error. Please check your connection and try again.");
+      }
+    });
+  </script>
+
+</body>
+</html>

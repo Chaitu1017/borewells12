@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookings</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+    h1 { text-align: center; color: #003366; margin-bottom: 30px; }
+    .back-button {
+      display: inline-block;
+      margin: 0 0 20px 0;
+      padding: 10px 20px;
+      border-radius: 5px;
+      background: #ccc;
+      color: #333;
+      text-decoration: none;
+    }
+
+    .bookings-table-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .bookings-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .bookings-table th, .bookings-table td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+    }
+    .bookings-table th {
+      background-color: #003366;
+      color: white;
+      font-weight: bold;
+    }
+    .bookings-table tr:hover { background-color: #f5f5f5; }
+    .bookings-table button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #3498db;
+      color: white;
+    }
+    .bookings-table button:hover { background: #2980b9; }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 10px;
+      text-align: left;
+    }
+    .modal-content h3 { color: #003366; }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover { color: black; }
+    .cancel-btn {
+      background: #e74c3c;
+      color: white;
+      margin-top: 15px;
+    }
+    .cancel-btn:hover { background: #c0392b; }
+  </style>
+</head>
+<body>
+
+  <h1>My Bookings</h1>
+  <a href="dashboard_customer.html" class="back-button">Back</a>
+
+  <div class="bookings-table-container">
+    <table class="bookings-table" id="bookingTable">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="4" style="text-align: center;">Loading bookings...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal -->
+  <div id="bookingDetailsModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Booking Details</h3>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById("bookingDetailsModal");
+    const modalBody = document.getElementById("modalBody");
+    const span = document.getElementsByClassName("close")[0];
+
+    span.onclick = () => modal.style.display = "none";
+    window.onclick = event => { if (event.target == modal) modal.style.display = "none"; };
+
+    function showDetails(booking) {
+      modalBody.innerHTML = `
+        <p><strong>Booking ID:</strong> ${booking._id}</p>
+        <p><strong>Type:</strong> ${booking.type}</p>
+        <p><strong>Date:</strong> ${new Date(booking.date).toLocaleDateString()}</p>
+        <p><strong>Village:</strong> ${booking.village}</p>
+        <p><strong>Near Town:</strong> ${booking.town}</p>
+        <p><strong>Status:</strong> ${booking.status}</p>
+      `;
+
+      if (booking.status === "Pending") {
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = "Cancel Booking";
+        cancelButton.className = "cancel-btn";
+        cancelButton.onclick = () => cancelBooking(booking._id);
+        modalBody.appendChild(cancelButton);
+      }
+
+      modal.style.display = "block";
+    }
+
+    async function loadBookings() {
+      const customerId = localStorage.getItem("customerId");
+      const tableBody = document.querySelector("#bookingTable tbody");
+
+      try {
+        const res = await fetch(`/api/customer/${customerId}/bookings`);
+        const bookings = await res.json();
+
+        tableBody.innerHTML = "";
+        if (!bookings.length) {
+          tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">You have no bookings yet.</td></tr>';
+          return;
+        }
+
+        bookings.forEach(b => {
+          const row = tableBody.insertRow();
+          row.insertCell(0).innerText = b.type;
+          row.insertCell(1).innerText = new Date(b.date).toLocaleDateString();
+          row.insertCell(2).innerText = b.status;
+
+          const detailsCell = row.insertCell(3);
+          const detailsButton = document.createElement('button');
+          detailsButton.innerText = "Click for Details";
+          detailsButton.onclick = () => showDetails(b);
+          detailsCell.appendChild(detailsButton);
+        });
+      } catch (error) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Failed to load bookings.</td></tr>';
+        console.error("Error fetching bookings:", error);
+      }
+    }
+
+    async function cancelBooking(id) {
+      if (confirm("Are you sure you want to cancel this booking?")) {
+        await fetch(`/api/customer/booking/${id}/cancel`, { method: "PUT" });
+        alert("Booking cancelled!");
+        loadBookings(); // ✅ reload table without refreshing page
+        modal.style.display = "none";
+      }
+    }
+
+    loadBookings();
+  </script>
+
+</body>
+</html>
