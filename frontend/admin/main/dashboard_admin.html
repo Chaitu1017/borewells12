@@ -7,11 +7,9 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 0;
-      margin: 0;
+      padding: 0; margin: 0;
       background: #f4f6f8;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       min-height: 100vh;
     }
     .main-content {
@@ -19,57 +17,79 @@
       text-align: center;
       padding: 50px 20px;
     }
-    h1 {
-      color: #003366;
+    h1 { color: #003366; }
+    .dashboard-cards {
+      display: flex; justify-content: center; flex-wrap: wrap;
+      gap: 30px; margin-top: 40px;
     }
-    .action-btn {
-      margin-top: 30px;
-      padding: 15px 30px;
-      font-size: 1.2rem;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 8px;
+    .dashboard-card {
+      background: #ffffff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      text-align: center;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: 0.3s;
+      width: 250px;
     }
-    .action-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    .dashboard-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .dashboard-card .icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    .dashboard-card h3 {
+      color: #003366;
+      margin: 0;
     }
   </style>
 </head>
 <body>
-  <!-- Header -->
   <div id="adminHeader"></div>
 
-  <!-- Main Content -->
   <div class="main-content">
-    <h1>Welcome, Admin 🎉</h1>
-    <p>This is your main dashboard. You can manage all borewell service requests from here.</p>
-    <button class="action-btn" onclick="window.location.href='admin_booking.html'">
-      View Bookings
-    </button>
+    <!-- ✅ Admin name pulled dynamically -->
+    <h1>Welcome, <span id="adminName">Admin</span>! 🎉</h1>
+    <p>Manage all aspects of your borewell business from here.</p>
+
+    <div class="dashboard-cards">
+      <div class="dashboard-card" role="button" onclick="window.location.href='admin_booking.html'">
+        <div class="icon">📅</div>
+        <h3>Manage Bookings</h3>
+      </div>
+      <div class="dashboard-card" role="button" onclick="window.location.href='warehouse.html'">
+        <div class="icon">📦</div>
+        <h3>Warehouse</h3>
+      </div>
+    </div>
   </div>
 
-  <!-- Footer -->
   <div id="adminFooter"></div>
 
   <script>
-    // Load Header and Footer dynamically
-    async function loadComponent(id, file) {
+    // Helper: load external partials
+    const loadComponent = async (id, file) => {
       try {
         const res = await fetch(file);
-        if (!res.ok) throw new Error(`Failed to load ${file}`);
+        if (!res.ok) throw new Error("Failed to load " + file);
         const html = await res.text();
         document.getElementById(id).innerHTML = html;
       } catch (error) {
-        console.error(error);
+        console.error("Component load error:", error);
       }
-    }
+    };
 
-    loadComponent("adminHeader", "../partials/admin_header.html");
-    loadComponent("adminFooter", "../partials/admin_footer.html");
+    // Load header/footer + set admin name
+    document.addEventListener("DOMContentLoaded", () => {
+      loadComponent("adminHeader", "../partials/admin_header.html");
+      loadComponent("adminFooter", "../partials/admin_footer.html");
+
+      // ✅ Get admin name from localStorage (fallback = "Admin")
+      const adminName = (localStorage.getItem("adminName") || "Admin").trim();
+      document.getElementById("adminName").textContent = adminName || "Admin";
+    });
   </script>
 </body>
 </html>

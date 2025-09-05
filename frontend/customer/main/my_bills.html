@@ -5,60 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Bills</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f9;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 800px;
-      margin: 50px auto;
-      padding: 20px;
-      text-align: center;
-    }
-    h1 {
-      color: #003366;
-      margin-bottom: 20px;
-    }
-    .bill-list {
-      display: grid;
-      gap: 20px;
-    }
-    .bill-card {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      border-left: 5px solid #007bff;
-      text-align: left;
-    }
-    .bill-card h3 {
-      margin-top: 0;
-      color: #007bff;
-    }
-    .bill-card p {
-      margin: 5px 0;
-    }
-    .btn {
-      padding: 8px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      text-decoration: none;
-      color: white;
-      display: inline-block;
-    }
-    .btn.back-btn {
-      background-color: #6c757d;
-      margin-bottom: 20px;
-    }
+    body { font-family: Arial, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 0; }
+    .container { max-width: 800px; margin: 50px auto; padding: 20px; text-align: center; }
+    h1 { color: #003366; margin-bottom: 20px; }
+    .bill-list { display: grid; gap: 20px; }
+    .bill-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); border-left: 5px solid #007bff; text-align: left; }
+    .bill-card h3 { margin-top: 0; color: #007bff; }
+    .bill-card p { margin: 5px 0; }
+    .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; color: white; display: inline-block; }
+    .btn.back-btn { background-color: #6c757d; margin-bottom: 20px; }
+    .btn.download-btn { background-color: #28a745; margin-top: 10px; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div id="customerHeader"></div>
-
   <div class="container">
     <a href="dashboard_customer.html" class="btn back-btn">← Back to Dashboard</a>
     <h1>My Bills</h1>
@@ -66,11 +27,9 @@
       <p>Loading bills...</p>
     </div>
   </div>
-
   <div id="customerFooter"></div>
 
   <script>
-    // Load header and footer dynamically
     async function loadComponent(id, file) {
       try {
         const res = await fetch(file);
@@ -84,18 +43,21 @@
     loadComponent("customerHeader", "../partials/customer_header.html");
     loadComponent("customerFooter", "../partials/customer_footer.html");
 
-    // Fetch bills
     async function fetchBills() {
       const customerId = localStorage.getItem("customerId");
+      const customerName = localStorage.getItem("customerName") || "Customer";
+      const list = document.getElementById("billList");
+
       if (!customerId) {
-        document.getElementById("billList").innerHTML = "<p>Please log in to view your bills.</p>";
+        list.innerHTML = "<p>Please log in to view your bills.</p>";
         return;
       }
 
       try {
         const res = await fetch(`http://localhost:5000/api/customer/${customerId}/bills`);
+        if (!res.ok) throw new Error("Failed to fetch bills");
         const bills = await res.json();
-        const list = document.getElementById("billList");
+
         list.innerHTML = "";
 
         if (!Array.isArray(bills) || bills.length === 0) {
@@ -106,19 +68,54 @@
         bills.forEach(bill => {
           const card = document.createElement("div");
           card.className = "bill-card";
+
+          const billDate = bill.date ? new Date(bill.date).toLocaleDateString() : "N/A";
+          const safeBill = encodeURIComponent(JSON.stringify(bill));
+
           card.innerHTML = `
-            <h3>Bill for Booking ID: ${bill.bookingId}</h3>
-            <p><strong>Date:</strong> ${bill.date ? new Date(bill.date).toLocaleDateString() : "N/A"}</p>
-            <p><strong>Amount:</strong> ₹${bill.amount}</p>
-            <p><strong>Description:</strong> ${bill.description || "N/A"}</p>
+            <h3>Bill for Booking ID: ${bill.bookingId || "N/A"}</h3>
+            <p><strong>Date:</strong> ${billDate}</p>
+            <p><strong>Amount:</strong> ₹${bill.amount || 0}</p>
+            <p><strong>Feet Dug:</strong> ${bill.feetDug || 0} ft</p>
+            <p><strong>Pipes Used:</strong> ${bill.pipesUsed || 0} (${bill.pipeType || "N/A"})</p>
+            <p><strong>Holes Made:</strong> ${bill.holesMade || 0}</p>
             <p><strong>Status:</strong> ${bill.status || "Pending"}</p>
+            <button class="btn download-btn" onclick='downloadBill("${safeBill}")'>Download Bill</button>
           `;
           list.appendChild(card);
         });
       } catch (error) {
         console.error("Error fetching bills:", error);
-        document.getElementById("billList").innerHTML = "<p>Failed to load bills.</p>";
+        list.innerHTML = "<p>Failed to load bills.</p>";
       }
+    }
+
+    // ✅ Safe download PDF function
+    function downloadBill(encodedBill) {
+      const billData = JSON.parse(decodeURIComponent(encodedBill));
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const customerName = localStorage.getItem("customerName") || "Customer";
+
+      const invoiceDate = billData.date ? new Date(billData.date).toLocaleDateString() : new Date().toLocaleDateString();
+
+      doc.setFontSize(20);
+      doc.text("Sri Durga Devi Borewells", 105, 20, null, null, "center");
+      doc.setFontSize(12);
+      doc.text("--------------------------------------------------------------", 10, 30);
+      doc.text("Official Invoice", 105, 40, null, null, "center");
+      doc.text("Invoice Date: " + invoiceDate, 10, 50);
+      doc.text(`Customer Name: ${customerName}`, 10, 60);
+      doc.text(`Customer ID: ${billData.customerId || "N/A"}`, 10, 70);
+      doc.text("--------------------------------------------------------------", 10, 80);
+      doc.text("Service Details:", 10, 90);
+      doc.text(`- Feet Dug: ${billData.feetDug || 0} ft`, 10, 100);
+      doc.text(`- Pipes Used: ${billData.pipesUsed || 0} (${billData.pipeType || "N/A"})`, 10, 110);
+      doc.text(`- Holes Made: ${billData.holesMade || 0}`, 10, 120);
+      doc.text("--------------------------------------------------------------", 10, 130);
+      doc.text(`Total Amount: ₹${billData.amount || 0}`, 10, 140);
+
+      doc.save(`bill_${billData.customerId || "NA"}_${invoiceDate}.pdf`);
     }
 
     document.addEventListener("DOMContentLoaded", fetchBills);

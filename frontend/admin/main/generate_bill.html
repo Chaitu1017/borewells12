@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate Bill</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #003366;
+      margin-bottom: 20px;
+    }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: white;
+      margin-right: 10px;
+    }
+    button.generate-btn { background-color: #28a745; }
+    button.back-btn { background-color: #6c757d; }
+    .customer-info {
+      margin-bottom: 20px;
+      border: 1px dashed #ccc;
+      padding: 10px;
+      border-radius: 6px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div id="adminHeader"></div>
+  <div class="container">
+    <h1>Generate Customer Bill</h1>
+    <div class="customer-info">
+      <h3>Customer Details</h3>
+      <p><strong>Name:</strong> <span id="customerName"></span></p>
+      <p><strong>ID:</strong> <span id="customerId"></span></p>
+      <p><strong>Town:</strong> <span id="customerTown"></span></p>
+    </div>
+    <form id="billForm">
+      <div class="form-group">
+        <label for="feetDug">Feet Dug:</label>
+        <input type="number" id="feetDug" required>
+      </div>
+      <div class="form-group">
+        <label for="pipesUsed">Pipes Used:</label>
+        <input type="number" id="pipesUsed" required>
+      </div>
+      <div class="form-group">
+        <label for="pipeType">Pipe Type:</label>
+        <select id="pipeType" required>
+          <option value="">Select Pipe Type</option>
+          <option value="6-Gage">6-Gage</option>
+          <option value="4-Gage">4-Gage</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="holesMade">Holes Made:</label>
+        <input type="number" id="holesMade" required>
+      </div>
+      <div class="form-group">
+        <label for="amount">Total Amount (₹):</label>
+        <input type="number" id="amount" required>
+      </div>
+      <button type="submit" class="generate-btn">Generate & Send Bill</button>
+      <button type="button" class="back-btn" onclick="window.history.back()">Back</button>
+    </form>
+  </div>
+  <div id="adminFooter"></div>
+
+  <script>
+    // Load header and footer
+    const loadComponent = async (id, file) => {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error("Failed to load " + file);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    loadComponent("adminHeader", "../partials/admin_header.html");
+    loadComponent("adminFooter", "../partials/admin_footer.html");
+
+    // Get query params
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get("bookingId") || "";
+    const customerName = urlParams.get("customerName") || "N/A";
+    const customerId = urlParams.get("customerId") || "N/A";
+    const customerTown = urlParams.get("customerTown") || "N/A";
+
+    // Fill customer details
+    document.getElementById("customerName").textContent = customerName;
+    document.getElementById("customerId").textContent = customerId;
+    document.getElementById("customerTown").textContent = customerTown;
+
+    // Form submit handler
+    document.getElementById("billForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const feetDug = document.getElementById("feetDug").value;
+      const pipesUsed = document.getElementById("pipesUsed").value;
+      const pipeType = document.getElementById("pipeType").value;
+      const holesMade = document.getElementById("holesMade").value;
+      const amount = document.getElementById("amount").value;
+
+      const billData = { bookingId, feetDug, pipesUsed, pipeType, holesMade, amount };
+
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/bill", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(billData),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("Bill sent successfully!");
+          generatePDF(billData);
+          window.history.back();
+        } else {
+          alert("Error: " + (data.message || "Unable to send bill"));
+        }
+      } catch (error) {
+        console.error("Error sending bill:", error);
+        alert("Failed to send bill due to network error.");
+      }
+    });
+
+    // Generate PDF
+    const generatePDF = (billData) => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Header
+      doc.setFontSize(20);
+      doc.text("Sri Durga Devi Borewells", 105, 20, { align: "center" });
+      doc.setFontSize(12);
+      doc.text("-------------------------------------------------------------", 10, 30);
+
+      // Title
+      doc.text("Official Invoice", 105, 40, { align: "center" });
+      doc.text("Invoice Date: " + new Date().toLocaleDateString(), 10, 50);
+
+      // Customer details
+      doc.text(`Customer Name: ${customerName}`, 10, 60);
+      doc.text(`Customer ID: ${customerId}`, 10, 70);
+      doc.text(`Town: ${customerTown}`, 10, 80);
+
+      doc.text("-------------------------------------------------------------", 10, 90);
+
+      // Service details
+      doc.text("Service Details:", 10, 100);
+      doc.text(`- Feet Dug: ${billData.feetDug} ft`, 10, 110);
+      doc.text(`- Pipes Used: ${billData.pipesUsed} (${billData.pipeType})`, 10, 120);
+      doc.text(`- Holes Made: ${billData.holesMade}`, 10, 130);
+
+      doc.text("-------------------------------------------------------------", 10, 140);
+      doc.text(`Total Amount: ₹${billData.amount}`, 10, 150);
+
+      // Safe filename (no slashes)
+      const dateStr = new Date().toISOString().split("T")[0];
+      const safeId = customerId.replace(/[^a-z0-9]/gi, "_");
+      doc.save(`bill_${safeId}_${dateStr}.pdf`);
+    };
+  </script>
+</body>
+</html>

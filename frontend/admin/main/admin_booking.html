@@ -5,19 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Bookings</title>
   <style>
-    /* Simple, clean styling */
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f6f9;
       color: #333;
       margin: 0;
       padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
     .container {
       max-width: 800px;
       margin: 50px auto;
       padding: 20px;
       text-align: center;
+      flex: 1;
     }
     h1 {
       color: #003366;
@@ -49,12 +52,28 @@
       background-color: #007bff;
       color: white;
     }
+    .back-btn {
+      display: inline-block;
+      background-color: #6c757d;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      text-decoration: none;
+      margin-bottom: 20px;
+      transition: background-color 0.2s;
+    }
+    .back-btn:hover {
+      background-color: #5a6268;
+    }
   </style>
 </head>
 <body>
   <div id="adminHeader"></div>
 
   <div class="container">
+    <!-- Back button to go to the main dashboard -->
+    <a href="dashboard_admin.html" class="back-btn">← Back to Dashboard</a>
+
     <h1>Manage Customer Bookings</h1>
     <div class="booking-buttons">
       <button class="booking-btn agri-btn" onclick="window.location.href='agriculture_booked.html'">
@@ -69,18 +88,21 @@
   <div id="adminFooter"></div>
 
   <script>
-    // Dynamic header and footer
-    fetch("../partials/admin_header.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("adminHeader").innerHTML = html;
-      });
+    async function loadComponent(id, file) {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error(`Failed to load ${file}`);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      } catch (error) {
+        console.error("Error loading component:", error);
+      }
+    }
 
-    fetch("../partials/admin_footer.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("adminFooter").innerHTML = html;
-      });
+    document.addEventListener("DOMContentLoaded", () => {
+      loadComponent("adminHeader", "../partials/admin_header.html");
+      loadComponent("adminFooter", "../partials/admin_footer.html");
+    });
   </script>
 </body>
 </html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warehouse Management</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 20px;
+      text-align: center;
+      flex: 1;
+    }
+    h1 { color: #003366; margin-bottom: 20px; }
+    .warehouse-info {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .info-card {
+      background: #e9ecef;
+      padding: 15px;
+      border-radius: 6px;
+      text-align: center;
+      min-width: 150px;
+    }
+    .info-card h3 { margin: 0; font-size: 24px; color: #003366; }
+    .info-card p { margin: 5px 0 0; color: #6c757d; }
+    .add-stock-form {
+      margin-top: 30px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: left;
+    }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; }
+    input[type="number"], select {
+      width: 100%; padding: 10px;
+      border: 1px solid #ccc; border-radius: 4px;
+    }
+    .add-btn {
+      background-color: #28a745;
+      color: white;
+      padding: 10px 15px;
+      border: none; border-radius: 4px;
+      cursor: pointer;
+    }
+    .add-btn:hover { background-color: #218838; }
+  </style>
+</head>
+<body>
+  <div id="adminHeader"></div>
+
+  <div class="container">
+    <h1>Warehouse Management</h1>
+
+    <div class="warehouse-info">
+      <div class="info-card">
+        <h3>4-Gage Pipes</h3>
+        <p id="pipes4Gage">0 in stock</p>
+      </div>
+      <div class="info-card">
+        <h3>6-Gage Pipes</h3>
+        <p id="pipes6Gage">0 in stock</p>
+      </div>
+    </div>
+
+    <!-- ✅ Add Stock Form -->
+    <div class="add-stock-form">
+      <h2>Add New Stock</h2>
+      <form id="addStockForm">
+        <div class="form-group">
+          <label for="pipeType">Pipe Type:</label>
+          <select id="pipeType" required>
+            <option value="4-Gage">4-Gage</option>
+            <option value="6-Gage">6-Gage</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="quantity">Quantity to Add:</label>
+          <input type="number" id="quantity" min="1" required>
+        </div>
+        <button type="submit" class="add-btn">Add to Stock</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="adminFooter"></div>
+
+  <script>
+    // Load header/footer components
+    const loadComponent = async (id, file) => {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error("Failed to load " + file);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      } catch (error) {
+        console.error("Component load error:", error);
+      }
+    };
+
+    loadComponent("adminHeader", "../partials/admin_header.html");
+    loadComponent("adminFooter", "../partials/admin_footer.html");
+
+    // Fetch warehouse summary
+    const fetchWarehouseData = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/warehouse-summary");
+        if (!res.ok) throw new Error("Failed to fetch warehouse summary");
+        const data = await res.json();
+
+        const pipes = data.pipes || [];
+        const pipes4Gage = pipes.find(p => p.item === "4-Gage");
+        const pipes6Gage = pipes.find(p => p.item === "6-Gage");
+
+        document.getElementById("pipes4Gage").textContent =
+          `${pipes4Gage ? pipes4Gage.quantity : 0} in stock`;
+        document.getElementById("pipes6Gage").textContent =
+          `${pipes6Gage ? pipes6Gage.quantity : 0} in stock`;
+      } catch (error) {
+        console.error("Error fetching warehouse data:", error);
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", fetchWarehouseData);
+
+    // Handle Add Stock form
+    document.getElementById("addStockForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const item = document.getElementById("pipeType").value;
+      const quantity = parseInt(document.getElementById("quantity").value, 10);
+
+      if (!quantity || quantity <= 0) {
+        alert("Please enter a valid quantity greater than 0.");
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/warehouse/add-stock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ item, quantity })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("Stock updated successfully!");
+          fetchWarehouseData();
+          e.target.reset(); // ✅ clear form after submission
+        } else {
+          alert("Error: " + (data.message || "Failed to update stock."));
+        }
+      } catch (error) {
+        console.error("Error adding stock:", error);
+        alert("Failed to add stock.");
+      }
+    });
+  </script>
+</body>
+</html>
