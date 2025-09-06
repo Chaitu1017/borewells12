@@ -3,16 +3,10 @@
     Sri Durga Devi Borewells Admin
   </a>
   <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-    <span id="adminWelcomeText" style="font-weight: bold;"></span>
     <a href="dashboard_admin.html" style="color: white; text-decoration: none;">Dashboard</a>
     <a href="admin_booking.html" style="color: white; text-decoration: none;">Bookings</a>
-    <a href="../../login.html" style="color: white; text-decoration: none;" onclick="localStorage.clear()">Logout</a>
+        <a href="profile.html" style="display: block; width: 40px; height: 40px; overflow: hidden; border-radius: 50%; border: 2px solid white;">
+      <img src="https://via.placeholder.com/40" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+    </a>
   </div>
-  <script>
-    // ✅ NEW: Display admin's name from localStorage
-    document.addEventListener("DOMContentLoaded", () => {
-      const adminName = localStorage.getItem("adminName") || "Admin";
-      document.getElementById("adminWelcomeText").textContent = `Welcome, ${adminName}!`;
-    });
-  </script>
 </header>

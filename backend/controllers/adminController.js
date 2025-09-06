@@ -2,10 +2,9 @@ const Admin = require("../models/Admin");
 const Booking = require("../models/Booking");
 const Bill = require("../models/Bill");
 const Customer = require("../models/Customer");
-const Warehouse = require("../models/Warehouse"); // ✅ NEW: Import Warehouse model
+const Warehouse = require("../models/Warehouse");
+const bcrypt = require("bcrypt"); // ✅ ADD THIS LINE
 
-// ⚠️ IMPORTANT: This is the secret key required for admin signup.
-// Change this to a secure, private key.
 const ADMIN_SECRET_KEY = "my_secret_key_123";
 
 // Signup
@@ -15,7 +14,6 @@ exports.adminSignup = async (req, res) => {
     if (!name || !phone || !password || !secretKey) {
       return res.status(400).json({ message: "All fields are required" });
     }
-    // ✅ NEW: Check for the secret key
     if (secretKey !== ADMIN_SECRET_KEY) {
       return res.status(403).json({ message: "Invalid secret key" });
     }
@@ -23,8 +21,9 @@ exports.adminSignup = async (req, res) => {
     if (existing) {
       return res.status(400).json({ message: "Phone number already registered" });
     }
+    const hashedPassword = await bcrypt.hash(password, 10);
     const adminId = "ADM" + Date.now();
-    const newAdmin = new Admin({ adminId, name, phone, password });
+    const newAdmin = new Admin({ adminId, name, phone, password: hashedPassword });
     await newAdmin.save();
     res.status(201).json({ message: "Admin registered successfully", adminId });
   } catch (error) {
@@ -41,11 +40,11 @@ exports.adminLogin = async (req, res) => {
     if (!admin) {
       return res.status(404).json({ message: "Admin not found" });
     }
-    if (admin.password !== password) {
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-    // ✅ UPDATED: Return the admin's name as well
-    res.status(200).json({ message: "Login successful", adminId: admin.adminId, name: admin.name });
+    res.status(200).json({ message: "Login successful", adminId: admin.adminId, name: admin.name, phone: admin.phone });
   } catch (error) {
     res.status(500).json({ message: "Login failed", error: error.message });
   }
@@ -93,7 +92,8 @@ exports.updateBookingStatus = async (req, res) => {
 // Send bill for a completed booking
 exports.sendBill = async (req, res) => {
   try {
-    const { bookingId, feetDug, pipesUsed, pipeType, holesMade, amount } = req.body;
+    // ✅ UPDATED: Receive items and totalAmount
+    const { bookingId, items, totalAmount } = req.body;
     const booking = await Booking.findById(bookingId);
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
@@ -102,25 +102,47 @@ exports.sendBill = async (req, res) => {
     if (existingBill) {
       return res.status(409).json({ message: "A bill for this booking has already been sent." });
     }
+
+    // ✅ NEW: Calculate total pipes used for warehouse update
+    let pipesUsed = 0;
+    let pipes4GageUsed = 0;
+    let pipes6GageUsed = 0;
+
+    items.forEach(item => {
+      if (item.description.includes("5\" కేసింగ్") || item.description.includes("పైపు") || item.description.includes("Pipe")) {
+        pipes4GageUsed += item.feet; // Assuming feet is quantity for pipes
+      }
+      if (item.description.includes("7\" కేసింగ్")) {
+        pipes6GageUsed += item.feet;
+      }
+    });
+    
+    // Create new bill with all items
     const newBill = new Bill({
       bookingId,
       customerId: booking.customerId,
-      feetDug,
-      pipesUsed,
-      pipeType,
-      holesMade,
-      amount
+      items, // ✅ Save the new items array
+      totalAmount
     });
     await newBill.save();
     booking.status = "Completed";
     await booking.save();
 
-    // ✅ NEW: Decrease warehouse stock
-    await Warehouse.findOneAndUpdate(
-      { item: pipeType },
-      { $inc: { quantity: -pipesUsed } },
-      { new: true, upsert: true }
-    );
+    // ✅ NEW: Decrease warehouse stock based on pipe type
+    if (pipes4GageUsed > 0) {
+      await Warehouse.findOneAndUpdate(
+        { item: "4-Gage" },
+        { $inc: { quantity: -pipes4GageUsed } },
+        { new: true, upsert: true }
+      );
+    }
+    if (pipes6GageUsed > 0) {
+      await Warehouse.findOneAndUpdate(
+        { item: "6-Gage" },
+        { $inc: { quantity: -pipes6GageUsed } },
+        { new: true, upsert: true }
+      );
+    }
 
     res.status(201).json({ message: "Bill sent successfully", bill: newBill });
   } catch (error) {
@@ -133,16 +155,17 @@ exports.sendBill = async (req, res) => {
 exports.getWarehouseSummary = async (req, res) => {
   try {
     const pipes = await Warehouse.find();
-    const pipesUsed = await Bill.aggregate([
-      { $group: { _id: null, total: { $sum: "$pipesUsed" } } }
+    const totalPipesUsed = await Bill.aggregate([
+      { $unwind: "$items" },
+      { $match: { "items.description": { $regex: /పైపు|casing/i } } }, // Filter for pipe-related items
+      { $group: { _id: null, total: { $sum: "$items.feet" } } } // Assuming "feet" is pipe count here
     ]);
-    const totalPipesUsed = pipesUsed.length > 0 ? pipesUsed[0].total : 0;
     const totalPipesInStock = pipes.reduce((sum, pipe) => sum + pipe.quantity, 0);
 
     res.status(200).json({
       pipes,
       totalPipesInStock,
-      totalPipesUsed
+      totalPipesUsed: totalPipesUsed.length > 0 ? totalPipesUsed[0].total : 0
     });
   } catch (error) {
     console.error("Error fetching warehouse summary:", error);
@@ -150,7 +173,7 @@ exports.getWarehouseSummary = async (req, res) => {
   }
 };
 
-// ✅ NEW: Add stock to warehouse
+// Add stock to warehouse
 exports.addStock = async (req, res) => {
   try {
     const { item, quantity } = req.body;
@@ -166,5 +189,44 @@ exports.addStock = async (req, res) => {
   } catch (error) {
     console.error("Error adding stock:", error);
     res.status(500).json({ message: "Failed to add stock", error: error.message });
+  }
+};
+
+// ✅ NEW: Get Admin Profile
+exports.getAdminProfile = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const admin = await Admin.findOne({ adminId }).select('-password');
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+    res.status(200).json(admin);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch admin profile", error: error.message });
+  }
+};
+
+// ✅ NEW: Update Admin Profile
+exports.updateAdminProfile = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const { name, phone, oldPassword, newPassword } = req.body;
+    const admin = await Admin.findOne({ adminId });
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+    if (oldPassword && newPassword) {
+      const isMatch = await bcrypt.compare(oldPassword, admin.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Invalid old password" });
+      }
+      admin.password = await bcrypt.hash(newPassword, 10);
+    }
+    admin.name = name || admin.name;
+    admin.phone = phone || admin.phone;
+    await admin.save();
+    res.status(200).json({ message: "Profile updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update profile", error: error.message });
   }
 };

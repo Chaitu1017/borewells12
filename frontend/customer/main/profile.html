@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Profile</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .profile-pic {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 4px solid #007bff;
+      margin: 0 auto 20px;
+      overflow: hidden;
+    }
+    .profile-pic img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    h1 {
+      color: #003366;
+      margin-bottom: 20px;
+    }
+    .profile-details p {
+      font-size: 16px;
+      margin: 10px 0;
+    }
+    .profile-details strong {
+      color: #555;
+    }
+    .btn-group {
+      margin-top: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      color: white;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    .edit-btn { background-color: #007bff; }
+    .edit-btn:hover { background-color: #0056b3; }
+    .logout-btn { background-color: #dc3545; }
+    .logout-btn:hover { background-color: #a71d2a; }
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header will be loaded dynamically -->
+  <div id="customerHeader"></div>
+
+  <div class="container">
+    <div class="profile-pic">
+      <img id="profileImage" src="https://via.placeholder.com/120" alt="Profile Picture">
+    </div>
+    <h1>Customer Profile</h1>
+
+    <div class="profile-details">
+      <p><strong>Name:</strong> <span id="profileName">Loading...</span></p>
+      <p><strong>Phone:</strong> <span id="profilePhone">Loading...</span></p>
+      <p><strong>Customer ID:</strong> <span id="profileId">Loading...</span></p>
+    </div>
+
+    <div class="btn-group">
+      <a href="edit_profile.html" class="btn edit-btn">Edit Profile</a>
+      <button class="btn logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="errorMessage" class="error"></div>
+  </div>
+
+  <!-- Footer will be loaded dynamically -->
+  <div id="customerFooter"></div>
+
+  <script>
+    // Load reusable components (header/footer)
+    const loadComponent = async (id, file) => {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error("Failed to load " + file);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      } catch (error) {
+        console.error("Component load error:", error);
+      }
+    };
+
+    // Fetch customer profile data
+    const fetchProfileData = async () => {
+      const customerId = localStorage.getItem("customerId");
+      if (!customerId) {
+        document.getElementById("errorMessage").textContent = "Customer not logged in.";
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/customer/profile/${customerId}`);
+        const customer = await res.json();
+
+        if (res.ok && customer) {
+          document.getElementById("profileName").textContent = customer.name || "N/A";
+          document.getElementById("profilePhone").textContent = customer.phone || "N/A";
+          document.getElementById("profileId").textContent = customer.customerId || "N/A";
+
+          // If your API returns profile image, update it
+          if (customer.profileImage) {
+            document.getElementById("profileImage").src = customer.profileImage;
+          }
+        } else {
+          document.getElementById("errorMessage").textContent = customer.message || "Failed to load profile.";
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        document.getElementById("errorMessage").textContent = "Error fetching profile data.";
+      }
+    };
+
+    // Logout function
+    const logout = () => {
+      localStorage.clear();
+      window.location.href = "../../login.html";
+    };
+
+    // Initialize on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      loadComponent("customerHeader", "../partials/customer_header.html");
+      loadComponent("customerFooter", "../partials/customer_footer.html");
+      fetchProfileData();
+    });
+  </script>
+</body>
+</html>

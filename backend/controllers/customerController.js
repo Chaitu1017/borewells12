@@ -1,6 +1,7 @@
 const Customer = require("../models/Customer");
 const Booking = require("../models/Booking");
-const Bill = require("../models/Bill"); // ✅ Added Bill model
+const Bill = require("../models/Bill");
+const Review = require("../models/Review");
 const bcrypt = require("bcrypt");
 
 // ------------------ SIGNUP ------------------
@@ -66,7 +67,6 @@ exports.bookBore = async (req, res) => {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    // ✅ Get customer's phone number from the database
     const customer = await Customer.findOne({ customerId });
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
@@ -82,13 +82,11 @@ exports.bookBore = async (req, res) => {
     const endOfDay = new Date(bookingDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // ✅ Check daily booking limit for the specific type
     const bookingsOnDate = await Booking.countDocuments({
       date: { $gte: startOfDay, $lte: endOfDay },
-      type: type, // Filter by type
+      type: type,
       status: { $ne: "Cancelled" }
     });
-    // Max 3 bookings per day for each type
     if (bookingsOnDate >= 3) {
       return res.status(400).json({
         message: "Daily booking limit reached for this date. Please select another date."
@@ -97,7 +95,7 @@ exports.bookBore = async (req, res) => {
 
     const booking = new Booking({ 
         customerId, 
-        customerPhone, // ✅ Save the phone number
+        customerPhone,
         type, 
         date: bookingDate, 
         village, 
@@ -200,4 +198,74 @@ exports.getBills = async (req, res) => {
   }
 };
 
+// Get Customer Profile
+exports.getCustomerProfile = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const customer = await Customer.findOne({ customerId }).select('-password');
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+    res.status(200).json(customer);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch customer profile", error: error.message });
+  }
+};
 
+// Update Customer Profile
+exports.updateCustomerProfile = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { name, phone, oldPassword, newPassword } = req.body;
+    const customer = await Customer.findOne({ customerId });
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+    if (oldPassword && newPassword) {
+      const isMatch = await bcrypt.compare(oldPassword, customer.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Invalid old password" });
+      }
+      customer.password = await bcrypt.hash(newPassword, 10);
+    }
+    customer.name = name || customer.name;
+    customer.phone = phone || customer.phone;
+    await customer.save();
+    res.status(200).json({ message: "Profile updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update profile", error: error.message });
+  }
+};
+
+// ✅ NEW: Submit a review
+exports.submitReview = async (req, res) => {
+  try {
+    const { bookingId, customerId, customerName, rating, comment } = req.body;
+    if (!bookingId || !customerId || !customerName || !rating) {
+      return res.status(400).json({ message: "Booking ID, Customer ID, name, and rating are required." });
+    }
+    // Check if a review already exists for this booking
+    const existingReview = await Review.findOne({ bookingId });
+    if (existingReview) {
+      return res.status(409).json({ message: "You have already reviewed this booking." });
+    }
+    const newReview = new Review({ bookingId, customerId, customerName, rating, comment });
+    await newReview.save();
+    res.status(201).json({ message: "Review submitted successfully!" });
+  } catch (error) {
+    console.error("Error submitting review:", error);
+    res.status(500).json({ message: "Failed to submit review", error: error.message });
+  }
+};
+
+// ✅ NEW: Get all reviews for a customer
+exports.getCustomerReviews = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const reviews = await Review.find({ customerId }).sort({ createdAt: -1 });
+    res.status(200).json(reviews);
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    res.status(500).json({ message: "Failed to fetch reviews", error: error.message });
+  }
+};

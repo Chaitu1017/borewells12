@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Give Review</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 {
+      color: #003366;
+      margin-bottom: 20px;
+    }
+    .rating {
+      display: flex;
+      justify-content: center;
+      flex-direction: row-reverse; /* ensures stars highlight leftwards */
+      margin-bottom: 20px;
+    }
+    .rating input {
+      display: none;
+    }
+    .rating label {
+      font-size: 2em;
+      color: #ccc;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .rating input:checked ~ label,
+    .rating label:hover,
+    .rating label:hover ~ label {
+      color: #f1c40f;
+    }
+    .form-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+      font-size: 14px;
+    }
+    .btn-group {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: white;
+      text-decoration: none;
+      font-size: 16px;
+    }
+    .submit-btn {
+      background-color: #28a745;
+    }
+    .submit-btn:hover {
+      background-color: #1e7e34;
+    }
+    .back-btn {
+      background-color: #6c757d;
+    }
+    .back-btn:hover {
+      background-color: #545b62;
+    }
+  </style>
+</head>
+<body>
+  <div id="customerHeader"></div>
+
+  <div class="container">
+    <h1>Give Your Review</h1>
+    <form id="reviewForm">
+      <p>Your feedback for booking: <strong><span id="bookingIdSpan">N/A</span></strong></p>
+
+      <div class="rating">
+        <input type="radio" id="star5" name="rating" value="5" required>
+        <label for="star5" title="5 stars">★</label>
+        <input type="radio" id="star4" name="rating" value="4">
+        <label for="star4" title="4 stars">★</label>
+        <input type="radio" id="star3" name="rating" value="3">
+        <label for="star3" title="3 stars">★</label>
+        <input type="radio" id="star2" name="rating" value="2">
+        <label for="star2" title="2 stars">★</label>
+        <input type="radio" id="star1" name="rating" value="1">
+        <label for="star1" title="1 star">★</label>
+      </div>
+
+      <div class="form-group">
+        <label for="comment">Comment (Optional):</label>
+        <textarea id="comment" rows="5" placeholder="Write your feedback here..."></textarea>
+      </div>
+
+      <div class="btn-group">
+        <button type="submit" class="btn submit-btn">Submit Review</button>
+        <a href="mybookings.html" class="btn back-btn">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <div id="customerFooter"></div>
+
+  <script>
+    // Load reusable header/footer
+    const loadComponent = async (id, file) => {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error("Failed to load " + file);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      } catch (error) {
+        console.error("Component load error:", error);
+      }
+    };
+    loadComponent("customerHeader", "../partials/customer_header.html");
+    loadComponent("customerFooter", "../partials/customer_footer.html");
+
+    // Extract bookingId from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get("bookingId");
+    document.getElementById("bookingIdSpan").textContent = bookingId || "N/A";
+
+    // Review submission
+    document.getElementById("reviewForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const customerId = localStorage.getItem("customerId");
+      const customerName = localStorage.getItem("customerName");
+      const ratingInput = document.querySelector('input[name="rating"]:checked');
+      const comment = document.getElementById("comment").value.trim();
+
+      if (!bookingId || !customerId || !customerName || !ratingInput) {
+        alert("Please log in and provide a rating.");
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:5000/api/customer/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookingId,
+            customerId,
+            customerName,
+            rating: ratingInput.value,
+            comment
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("Thank you for your review!");
+          window.location.href = "mybookings.html";
+        } else {
+          alert("Error: " + (data.message || "Failed to submit review."));
+        }
+      } catch (error) {
+        console.error("Error submitting review:", error);
+        alert("Failed to submit review. Please try again.");
+      }
+    });
+  </script>
+</body>
+</html>

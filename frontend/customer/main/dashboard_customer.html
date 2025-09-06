@@ -15,50 +15,10 @@
       color: #333;
     }
 
-    /* Header */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #003366;
-      color: white;
-      padding: 15px 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      flex-wrap: wrap;
-    }
-    .company-name {
-      font-size: 24px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .user-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .user-actions span {
-      font-size: 16px;
-      font-weight: 500;
-    }
-    .user-actions button {
-      padding: 8px 15px;
-      border: none;
-      border-radius: 20px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: 0.3s;
-    }
-    .profile-btn { background: #f1c40f; color: #003366; }
-    .logout-btn { background: #e74c3c; color: white; }
-    .user-actions button:hover { transform: translateY(-2px); }
-
-    /* Main */
     .main-dashboard { flex: 1; padding: 20px; }
     .main-dashboard h2 { color: #003366; margin-bottom: 15px; font-size: 28px; }
     .main-dashboard p.welcome-text { font-size: 18px; color: #555; margin-bottom: 25px; }
 
-    /* Dashboard cards */
     .dashboard-cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -81,7 +41,6 @@
     .dashboard-card h3 { margin-top: 10px; color: #003366; }
     .dashboard-card .icon { font-size: 36px; color: #2980b9; }
 
-    /* Summary cards */
     .summary-cards { display: grid; gap: 15px; }
     .summary-card {
       background: #ffffff;
@@ -92,7 +51,6 @@
     }
     .summary-card h3 { margin-bottom: 8px; color: #003366; }
 
-    /* Loader */
     .loader {
       display: inline-block;
       width: 16px;
@@ -105,7 +63,6 @@
     }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* Retry button */
     .retry-btn {
       margin-top: 8px;
       padding: 6px 14px;
@@ -115,34 +72,18 @@
       color: #fff;
       cursor: pointer;
       font-size: 14px;
+      display: none;
     }
     .retry-btn:hover { background: #0056b3; }
-
-    footer {
-      text-align: center;
-      background: #003366;
-      color: white;
-      padding: 12px;
-    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="company-name" onclick="window.location.href='dashboard_customer.html'">
-      Sri Durga Devi Borewells
-    </div>
-    <div class="user-actions">
-      <span id="customerNameHeader">Welcome, Customer!</span>
-      <button class="profile-btn" onclick="viewProfile()">Profile</button>
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </div>
-  </header>
+  <div id="customerHeader"></div>
 
   <main class="main-dashboard">
     <h2>Welcome <span id="customerNameMain">Customer</span>!</h2>
     <p class="welcome-text">Here's a quick overview of your account.</p>
 
-    <!-- Dashboard options -->
     <div class="dashboard-cards">
       <div class="dashboard-card" onclick="bookBore()">
         <div class="icon">💧</div>
@@ -162,12 +103,11 @@
       </div>
     </div>
 
-    <!-- Summary -->
     <div class="summary-cards">
       <div class="summary-card">
         <h3>Latest Booking</h3>
         <div id="bookingInfo"><span class="loader"></span> Loading latest booking...</div>
-        <button id="retryBooking" class="retry-btn" style="display:none;" onclick="fetchDashboardData()">Retry</button>
+        <button id="retryBooking" class="retry-btn" onclick="fetchDashboardData()">Retry</button>
       </div>
       <div class="summary-card">
         <h3>Pending Bills</h3>
@@ -176,19 +116,37 @@
     </div>
   </main>
 
-  <footer>
-    <p>© 2025 Sri Durga Devi Borewells | Vizianagaram, Andhra Pradesh</p>
-  </footer>
+  <div id="customerFooter"></div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", fetchDashboardData);
+    const loadComponent = async (id, file) => {
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error("Failed to load " + file);
+        const html = await res.text();
+        document.getElementById(id).innerHTML = html;
+      } catch (error) {
+        console.error("Component load error:", error);
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadComponent("customerHeader", "../partials/customer_header.html");
+      loadComponent("customerFooter", "../partials/customer_footer.html");
+      fetchDashboardData();
+    });
 
     async function fetchDashboardData() {
       const customerName = localStorage.getItem("customerName") || "Customer";
       const customerId = localStorage.getItem("customerId");
 
       document.getElementById("customerNameMain").textContent = customerName;
-      document.getElementById("customerNameHeader").textContent = `Welcome, ${customerName}!`;
+
+      // update header name if exists
+      const headerNameEl = document.getElementById("customerNameHeader");
+      if (headerNameEl) {
+        headerNameEl.textContent = `Welcome, ${customerName}!`;
+      }
 
       if (customerId) {
         const bookingInfoDiv = document.getElementById("bookingInfo");
@@ -225,8 +183,6 @@
     function openBookings() { window.location.href = "mybookings.html"; }
     function openBills() { window.location.href = "my_bills.html"; }
     function giveReview() { window.location.href = "review.html"; }
-    function viewProfile() { window.location.href = "profile.html"; }
-    function logout() { localStorage.clear(); window.location.href = "../../login.html"; }
   </script>
 </body>
 </html>

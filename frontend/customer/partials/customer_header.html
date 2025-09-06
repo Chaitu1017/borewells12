@@ -1,17 +1,13 @@
 <header class="header">
-  <div class="company-name" onclick="window.location.href='dashboard_customer.html'">
+  <a href="dashboard_customer.html" class="company-name">
     Sri Durga Devi Borewells
-  </div>
-
-  <div class="nav-links">
-    <button onclick="window.location.href='dashboard_customer.html'">Bookings</button>
-    <button>Pipedetails</button>
-  </div>
+  </a>
 
   <div class="user-actions">
     <span id="customerName">Welcome, Customer!</span>
-    <button onclick="alert('Profile Page Coming Soon')">Profile</button>
-    <button onclick="alert('Logging out...')">Logout</button>
+    <a href="profile.html" class="profile-pic">
+      <img src="https://via.placeholder.com/40" alt="Profile">
+    </a>
   </div>
 </header>
 
@@ -23,22 +19,54 @@
     background: #0077b6;
     color: white;
     padding: 15px 30px;
+    flex-wrap: wrap;
   }
+
   .company-name {
     font-size: 22px;
     font-weight: bold;
-    cursor: pointer;
+    color: white;
+    text-decoration: none;
     transition: transform 0.2s;
   }
-  .company-name:hover { transform: scale(1.1); }
-  .nav-links button,
-  .user-actions button {
-    margin: 0 8px;
-    padding: 8px 15px;
-    border: none;
-    border-radius: 5px;
+  .company-name:hover {
+    transform: scale(1.1);
+  }
+
+  .user-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  #customerName {
+    font-size: 16px;
+  }
+
+  .profile-pic {
+    display: block;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border-radius: 50%;
+    border: 2px solid white;
     cursor: pointer;
   }
-  .nav-links button { background: #0096c7; color: white; }
-  .user-actions button { background: #ff6b6b; color: white; }
+
+  .profile-pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 </style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const customerName = localStorage.getItem("customerName") || "Customer";
+    const customerNameElement = document.getElementById("customerName");
+    if (customerNameElement) {
+      customerNameElement.textContent = `Welcome, ${customerName}!`;
+    }
+  });
+</script>

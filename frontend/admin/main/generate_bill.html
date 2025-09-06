@@ -5,55 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Generate Bill</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f9;
-      color: #333;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 600px;
-      margin: 50px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-      color: #003366;
-      margin-bottom: 20px;
-    }
-    .form-group { margin-bottom: 15px; }
+    body { font-family: Arial, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
+    .container { max-width: 800px; margin: 50px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h1 { text-align: center; color: #003366; margin-bottom: 20px; }
+    .customer-info, .bill-form-section { margin-bottom: 20px; border: 1px dashed #ccc; padding: 10px; border-radius: 6px; }
     label { display: block; font-weight: bold; margin-bottom: 5px; }
-    input, select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      color: white;
-      margin-right: 10px;
-    }
-    button.generate-btn { background-color: #28a745; }
-    button.back-btn { background-color: #6c757d; }
-    .customer-info {
-      margin-bottom: 20px;
-      border: 1px dashed #ccc;
-      padding: 10px;
-      border-radius: 6px;
-    }
+    input[type="number"], select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .bill-items-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .bill-items-table th, .bill-items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    .bill-items-table th { background-color: #f2f2f2; }
+    .form-actions { margin-top: 20px; text-align: right; }
+    .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; }
+    .generate-btn { background-color: #28a745; }
+    .back-btn { background-color: #6c757d; }
+    #totalAmount { font-weight: bold; color: #003366; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
   <div id="adminHeader"></div>
@@ -66,52 +34,73 @@
       <p><strong>Town:</strong> <span id="customerTown"></span></p>
     </div>
     <form id="billForm">
-      <div class="form-group">
-        <label for="feetDug">Feet Dug:</label>
-        <input type="number" id="feetDug" required>
+      <div class="bill-form-section">
+        <h3>Bill Items</h3>
+        <table class="bill-items-table">
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Description</th>
+              <th>Feet/Qty</th>
+              <th>Rate</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody id="billItemsContainer">
+            <tr>
+              <td>1.</td>
+              <td>డ్రిల్లింగ్ 4 1/2 " 6"</td>
+              <td><input type="number" value="0" oninput="calculateAmount(this)" required></td>
+              <td><input type="number" value="0" oninput="calculateAmount(this)" required></td>
+              <td><input type="number" value="0" readonly></td>
+            </tr>
+            <tr>
+              <td>2.</td>
+              <td>5" కేసింగ్ పైపు ఫిక్సింగ్ చార్జ్</td>
+              <td><input type="number" value="0" oninput="calculateAmount(this)" required></td>
+              <td><input type="number" value="0" oninput="calculateAmount(this)" required></td>
+              <td><input type="number" value="0" readonly></td>
+            </tr>
+            <tr>
+              <td>3.</td>
+              <td>7" కేసింగ్ పైపు ఫిక్సింగ్ చార్జ్</td>
+              <td><input type="number" value="0" oninput="calculateAmount(this)" required></td>
+              <td><input type="number" value="0" oninput="calculateAmount(this)" required></td>
+              <td><input type="number" value="0" readonly></td>
+            </tr>
+            <tr>
+              <td>4.</td>
+              <td>10" కేసింగ్ పైపు</td>
+              <td><input type="number" value="0" oninput="calculateAmount(this)" required></td>
+              <td><input type="number" value="0" oninput="calculateAmount(this)" required></td>
+              <td><input type="number" value="0" readonly></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div class="form-group">
-        <label for="pipesUsed">Pipes Used:</label>
-        <input type="number" id="pipesUsed" required>
+      <div class="form-actions">
+        <p><strong>Total Amount: ₹<span id="totalAmount">0.00</span></strong></p>
+        <button type="submit" class="btn generate-btn">Generate & Send Bill</button>
+        <button type="button" class="btn back-btn" onclick="window.history.back()">Back</button>
       </div>
-      <div class="form-group">
-        <label for="pipeType">Pipe Type:</label>
-        <select id="pipeType" required>
-          <option value="">Select Pipe Type</option>
-          <option value="6-Gage">6-Gage</option>
-          <option value="4-Gage">4-Gage</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="holesMade">Holes Made:</label>
-        <input type="number" id="holesMade" required>
-      </div>
-      <div class="form-group">
-        <label for="amount">Total Amount (₹):</label>
-        <input type="number" id="amount" required>
-      </div>
-      <button type="submit" class="generate-btn">Generate & Send Bill</button>
-      <button type="button" class="back-btn" onclick="window.history.back()">Back</button>
     </form>
   </div>
   <div id="adminFooter"></div>
 
   <script>
     // Load header and footer
-    const loadComponent = async (id, file) => {
+    async function loadComponent(id, file) {
       try {
         const res = await fetch(file);
-        if (!res.ok) throw new Error("Failed to load " + file);
-        const html = await res.text();
-        document.getElementById(id).innerHTML = html;
-      } catch (error) {
-        console.error(error);
+        document.getElementById(id).innerHTML = await res.text();
+      } catch (err) {
+        console.error(err);
       }
-    };
+    }
     loadComponent("adminHeader", "../partials/admin_header.html");
     loadComponent("adminFooter", "../partials/admin_footer.html");
 
-    // Get query params
+    // Get customer details from URL
     const urlParams = new URLSearchParams(window.location.search);
     const bookingId = urlParams.get("bookingId") || "";
     const customerName = urlParams.get("customerName") || "N/A";
@@ -119,77 +108,110 @@
     const customerTown = urlParams.get("customerTown") || "N/A";
 
     // Fill customer details
-    document.getElementById("customerName").textContent = customerName;
-    document.getElementById("customerId").textContent = customerId;
-    document.getElementById("customerTown").textContent = customerTown;
+    document.getElementById('customerName').textContent = customerName;
+    document.getElementById('customerId').textContent = customerId;
+    document.getElementById('customerTown').textContent = customerTown;
 
-    // Form submit handler
-    document.getElementById("billForm").addEventListener("submit", async (e) => {
+    // Calculate row amount
+    function calculateAmount(input) {
+      const row = input.closest('tr');
+      const inputs = row.querySelectorAll('input');
+      const feet = parseFloat(inputs[0].value) || 0;
+      const rate = parseFloat(inputs[1].value) || 0;
+      if (feet < 0 || rate < 0) { alert("Values must be positive."); return; }
+      inputs[2].value = (feet * rate).toFixed(2);
+      updateTotalAmount();
+    }
+
+    // Update total
+    function updateTotalAmount() {
+      const amounts = document.querySelectorAll('#billItemsContainer tr input[readonly]');
+      let total = 0;
+      amounts.forEach(inp => total += parseFloat(inp.value) || 0);
+      document.getElementById('totalAmount').textContent = total.toFixed(2);
+    }
+
+    // Handle submit
+    document.getElementById('billForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const feetDug = document.getElementById("feetDug").value;
-      const pipesUsed = document.getElementById("pipesUsed").value;
-      const pipeType = document.getElementById("pipeType").value;
-      const holesMade = document.getElementById("holesMade").value;
-      const amount = document.getElementById("amount").value;
+      const rows = document.querySelectorAll('#billItemsContainer tr');
+      const items = [];
+      rows.forEach(row => {
+        const desc = row.querySelector('td:nth-child(2)').textContent.trim();
+        const vals = row.querySelectorAll('input');
+        items.push({
+          description: desc,
+          feet: parseFloat(vals[0].value) || 0,
+          rate: parseFloat(vals[1].value) || 0,
+          amount: parseFloat(vals[2].value) || 0
+        });
+      });
 
-      const billData = { bookingId, feetDug, pipesUsed, pipeType, holesMade, amount };
+      const totalAmount = parseFloat(document.getElementById('totalAmount').textContent);
 
       try {
         const res = await fetch("http://localhost:5000/api/admin/bill", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(billData),
+          body: JSON.stringify({ bookingId, items, totalAmount })
         });
         const data = await res.json();
         if (res.ok) {
           alert("Bill sent successfully!");
-          generatePDF(billData);
+          generatePDF(items, totalAmount);
           window.history.back();
         } else {
-          alert("Error: " + (data.message || "Unable to send bill"));
+          alert(`Error: ${data.message}`);
         }
-      } catch (error) {
-        console.error("Error sending bill:", error);
-        alert("Failed to send bill due to network error.");
+      } catch (err) {
+        alert("Failed to send bill.");
+        console.error(err);
       }
     });
 
-    // Generate PDF
-    const generatePDF = (billData) => {
+    // PDF generator
+    function generatePDF(items, totalAmount) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
-      // Header
-      doc.setFontSize(20);
-      doc.text("Sri Durga Devi Borewells", 105, 20, { align: "center" });
-      doc.setFontSize(12);
-      doc.text("-------------------------------------------------------------", 10, 30);
+      // Company Info
+      doc.setFontSize(16);
+      doc.text("SRI DURGA DEVI BORE WELLS", 105, 15, { align: "center" });
+      doc.setFontSize(10);
+      doc.text("V. Gopala Rao, P. Srinivasa Rao", 10, 25);
+      doc.text("9553553850, 9441340735", 10, 30);
 
-      // Title
-      doc.text("Official Invoice", 105, 40, { align: "center" });
-      doc.text("Invoice Date: " + new Date().toLocaleDateString(), 10, 50);
-
-      // Customer details
-      doc.text(`Customer Name: ${customerName}`, 10, 60);
-      doc.text(`Customer ID: ${customerId}`, 10, 70);
-      doc.text(`Town: ${customerTown}`, 10, 80);
-
-      doc.text("-------------------------------------------------------------", 10, 90);
-
-      // Service details
-      doc.text("Service Details:", 10, 100);
-      doc.text(`- Feet Dug: ${billData.feetDug} ft`, 10, 110);
-      doc.text(`- Pipes Used: ${billData.pipesUsed} (${billData.pipeType})`, 10, 120);
-      doc.text(`- Holes Made: ${billData.holesMade}`, 10, 130);
-
-      doc.text("-------------------------------------------------------------", 10, 140);
-      doc.text(`Total Amount: ₹${billData.amount}`, 10, 150);
-
-      // Safe filename (no slashes)
+      // Date
       const dateStr = new Date().toISOString().split("T")[0];
-      const safeId = customerId.replace(/[^a-z0-9]/gi, "_");
-      doc.save(`bill_${safeId}_${dateStr}.pdf`);
-    };
+      doc.text(`Date: ${dateStr}`, 200, 15, { align: "right" });
+
+      // Customer
+      doc.setFontSize(12);
+      doc.text(`Customer Name: ${customerName}`, 10, 45);
+      doc.text(`Customer ID: ${customerId}`, 10, 50);
+      doc.text(`Town: ${customerTown}`, 10, 55);
+
+      // Items table
+      const cols = ["No.", "Description", "Feet/Qty", "Rate", "Amount"];
+      const rows = items.map((it, i) => [
+        i + 1,
+        it.description,
+        it.feet.toFixed(2),
+        `₹${it.rate.toFixed(2)}`,
+        `₹${it.amount.toFixed(2)}`
+      ]);
+      doc.autoTable({ head: [cols], body: rows, startY: 65 });
+
+      // Totals + Notes
+      const y = doc.autoTable.previous.finalY + 10;
+      doc.text(`Grand Total: ₹${totalAmount.toFixed(2)}`, 200, y, { align: "right" });
+      doc.text("Customer Signature", 10, y + 20);
+      doc.text("Admin Signature", 200, y + 20, { align: "right" });
+      doc.text("No sand, gravel, or green stones were added in the borewell", 10, y + 35);
+      doc.text("4 gunny bags, one drum of water required", 10, y + 40);
+
+      doc.save(`bill_${customerId}_${dateStr}.pdf`);
+    }
   </script>
 </body>
 </html>

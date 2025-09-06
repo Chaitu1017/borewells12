@@ -15,8 +15,12 @@
     .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; color: white; display: inline-block; }
     .btn.back-btn { background-color: #6c757d; margin-bottom: 20px; }
     .btn.download-btn { background-color: #28a745; margin-top: 10px; }
+    .bill-details-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .bill-details-table th, .bill-details-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    .bill-details-table th { background-color: #f2f2f2; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
   <div id="customerHeader"></div>
@@ -30,6 +34,7 @@
   <div id="customerFooter"></div>
 
   <script>
+    // Load header & footer
     async function loadComponent(id, file) {
       try {
         const res = await fetch(file);
@@ -43,6 +48,7 @@
     loadComponent("customerHeader", "../partials/customer_header.html");
     loadComponent("customerFooter", "../partials/customer_footer.html");
 
+    // Fetch bills
     async function fetchBills() {
       const customerId = localStorage.getItem("customerId");
       const customerName = localStorage.getItem("customerName") || "Customer";
@@ -68,19 +74,43 @@
         bills.forEach(bill => {
           const card = document.createElement("div");
           card.className = "bill-card";
-
           const billDate = bill.date ? new Date(bill.date).toLocaleDateString() : "N/A";
           const safeBill = encodeURIComponent(JSON.stringify(bill));
+
+          let itemsHtml = "";
+          if (bill.items && Array.isArray(bill.items)) {
+            itemsHtml = `
+              <table class="bill-details-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>Description</th>
+                    <th>Feet/Qty</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${bill.items.map((item, index) => `
+                    <tr>
+                      <td>${index + 1}</td>
+                      <td>${item.description || "N/A"}</td>
+                      <td>${item.feet || 0}</td>
+                      <td>₹${item.rate || 0}</td>
+                      <td>₹${item.amount || 0}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `;
+          }
 
           card.innerHTML = `
             <h3>Bill for Booking ID: ${bill.bookingId || "N/A"}</h3>
             <p><strong>Date:</strong> ${billDate}</p>
-            <p><strong>Amount:</strong> ₹${bill.amount || 0}</p>
-            <p><strong>Feet Dug:</strong> ${bill.feetDug || 0} ft</p>
-            <p><strong>Pipes Used:</strong> ${bill.pipesUsed || 0} (${bill.pipeType || "N/A"})</p>
-            <p><strong>Holes Made:</strong> ${bill.holesMade || 0}</p>
-            <p><strong>Status:</strong> ${bill.status || "Pending"}</p>
-            <button class="btn download-btn" onclick='downloadBill("${safeBill}")'>Download Bill</button>
+            ${itemsHtml}
+            <p style="text-align: right; margin-top: 10px;"><strong>Total Amount: ₹${bill.totalAmount || 0}</strong></p>
+            <button class="btn download-btn" onclick='downloadBill("${safeBill}", "${customerName}")'>Download Bill</button>
           `;
           list.appendChild(card);
         });
@@ -90,30 +120,51 @@
       }
     }
 
-    // ✅ Safe download PDF function
-    function downloadBill(encodedBill) {
+    // Download bill as PDF
+    function downloadBill(encodedBill, customerName) {
       const billData = JSON.parse(decodeURIComponent(encodedBill));
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      const customerName = localStorage.getItem("customerName") || "Customer";
-
       const invoiceDate = billData.date ? new Date(billData.date).toLocaleDateString() : new Date().toLocaleDateString();
 
+      // Header
       doc.setFontSize(20);
-      doc.text("Sri Durga Devi Borewells", 105, 20, null, null, "center");
+      doc.text("SRI DURGA DEVI BORE WELLS", 105, 20, { align: "center" });
+      doc.setFontSize(10);
+      doc.text("V. Gopala Rao, P. Srinivasa Rao", 10, 28);
+      doc.text("9553553850, 9441340735", 10, 33);
+      doc.text(`Date: ${invoiceDate}`, 200 - 10, 15, { align: "right" });
+
+      // Customer details
       doc.setFontSize(12);
-      doc.text("--------------------------------------------------------------", 10, 30);
-      doc.text("Official Invoice", 105, 40, null, null, "center");
-      doc.text("Invoice Date: " + invoiceDate, 10, 50);
-      doc.text(`Customer Name: ${customerName}`, 10, 60);
-      doc.text(`Customer ID: ${billData.customerId || "N/A"}`, 10, 70);
-      doc.text("--------------------------------------------------------------", 10, 80);
-      doc.text("Service Details:", 10, 90);
-      doc.text(`- Feet Dug: ${billData.feetDug || 0} ft`, 10, 100);
-      doc.text(`- Pipes Used: ${billData.pipesUsed || 0} (${billData.pipeType || "N/A"})`, 10, 110);
-      doc.text(`- Holes Made: ${billData.holesMade || 0}`, 10, 120);
-      doc.text("--------------------------------------------------------------", 10, 130);
-      doc.text(`Total Amount: ₹${billData.amount || 0}`, 10, 140);
+      doc.text("------------------------------------------------------------------------------------------------", 10, 40);
+      doc.text(`Customer Name: ${customerName}`, 10, 48);
+      doc.text(`Customer ID: ${billData.customerId || "N/A"}`, 10, 53);
+      doc.text("------------------------------------------------------------------------------------------------", 10, 60);
+
+      // Bill items
+      const tableColumn = ["No.", "Description", "Feet/Qty", "Rate", "Amount"];
+      const tableRows = (billData.items || []).map((item, index) => [
+        index + 1,
+        item.description || "N/A",
+        item.feet || 0,
+        `₹${item.rate || 0}`,
+        `₹${item.amount || 0}`
+      ]);
+
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 65
+      });
+
+      // Total & footer
+      const finalY = doc.autoTable.previous.finalY;
+      doc.text(`Grand Total: ₹${billData.totalAmount || 0}`, 200 - 10, finalY + 10, { align: "right" });
+      doc.text(`Customer Signature`, 10, finalY + 30);
+      doc.text(`Admin Signature`, 200 - 10, finalY + 30, { align: "right" });
+      doc.text("No sand, gravel, or green stones were added in the borewell", 10, finalY + 50);
+      doc.text("4 gunny bags, one drum of water required", 10, finalY + 55);
 
       doc.save(`bill_${billData.customerId || "NA"}_${invoiceDate}.pdf`);
     }
